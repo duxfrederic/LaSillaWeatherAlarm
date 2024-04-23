@@ -3,8 +3,12 @@ import os
 import time
 import playsound
 from urllib.request import urlopen
-from enum import Enum 
+from enum import Enum
 import re
+# for some, urllib complains about not being able to verify ssl.
+# let us overwrite this as we do not need https.
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 import operator
 ops = {
@@ -28,19 +32,19 @@ class Status(Enum):
     ORANGE = 0
     YELLOW = 1
     GREEN = 2
-        
+
 
 class WeatherReport:
     def __init__(self, url=URL, update_frequency=update_frequency):
         self.url = url
         self.update_frequency = update_frequency
         self.update()
-        
+
     def getHTMLLines(self, url):
         content = urlopen(url)
         content = str(content.read()).split(r'\n')
         return content
-    
+
     def update(self):
         self._html_lines = self.getHTMLLines(self.url)
         self.last_update = time.time()
@@ -56,24 +60,24 @@ class Measurement:
     def __init__(self, name : str, report : WeatherReport):
         self.name = name
         self.report = report
-    
+
     @property
     def status(self):
         self.parse()
         return self._status
-    
+
     @property
     def value(self):
         self.parse()
         return self._value
-    
-    
-    
+
+
+
 class PhysicalMeasurement(Measurement):
     def parse(self):
         html_lines = self.report.html_lines
         line = property_lines[self.name]
-        
+
         assert self.name in html_lines[line]
         r = re.compile(r"[-]?[0-9]+[.][0-9]*")
         value = r.findall(html_lines[line+1])
@@ -98,16 +102,16 @@ class PhysicalMeasurement(Measurement):
                                  f"line {line}"
                                  f"{html_lines[line+2]}")
         self._value = value
-        self._status = status 
-        
-    
+        self._status = status
+
+
 class TelescopesOpen(Measurement):
     def __init__(self, report):
         super().__init__(name='Domes Status', report=report)
     def parse(self):
         html_lines = self.report.html_lines
         line = property_lines[self.name]
-        
+
         N_open = html_lines[line].count('green') - 1
         self._value = N_open
         # if all 3 are open, we probably good:
@@ -119,15 +123,15 @@ class TelescopesOpen(Measurement):
         # if all closed, probably not good:
         else:
             self._status = Status(-1)
-            
-            
+
+
 class CondensationRisk(Measurement):
     def __init__(self, report : WeatherReport):
         super().__init__(name='Condensation Risk', report=report)
         self.temp = PhysicalMeasurement('Temperature', self.report)
         self.dew = PhysicalMeasurement('Dew Point', self.report)
     def parse(self):
-        delta = self.temp.value - self.dew.value 
+        delta = self.temp.value - self.dew.value
         self._value = delta
         if delta >= 6:
             self._status = Status(2)
@@ -137,7 +141,7 @@ class CondensationRisk(Measurement):
             self._status = Status(0)
         else:
             self._status = Status(-1)
-        
+
 
 
 class Alert():
@@ -150,7 +154,7 @@ class Alert():
         # in seconds.
         self.howlong = howlong
         self.time_when_passed = 0
-        
+
     def check(self):
         op = ops[self.comp]
         if op(self.measurement.status.value, self.limit):
