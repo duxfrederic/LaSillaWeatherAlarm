@@ -98,6 +98,9 @@ class PhysicalMeasurement(Measurement):
             elif 'greenball' in html_lines[line]:
                 status = Status(2)
                 break
+            elif 'blueball' in html_lines[line]:  # for sun during daytime
+                status = Status(-1)
+                break
         else:
             raise AssertionError("Unknown status or wrong line!\n"
                                  f"line {line}"
