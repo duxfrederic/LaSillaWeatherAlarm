@@ -6,7 +6,7 @@ Created on Thu Apr 28 00:30:45 2022
 @author: fred
 """
 
-URL = 'http://www.ls.eso.org/lasilla/dimm/meteo_light.html'
+URL = 'https://www.ls.eso.org/lasilla/dimm/meteo_light.html'
 
 property_lines = {
         'Humidity': 22,

@@ -2,7 +2,7 @@
 import os
 import time
 import playsound
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 from enum import Enum
 import re
 # for some, urllib complains about not being able to verify ssl.
@@ -41,7 +41,8 @@ class WeatherReport:
         self.update()
 
     def getHTMLLines(self, url):
-        content = urlopen(url)
+        req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        content = urlopen(req, timeout=5)
         content = str(content.read()).split(r'\n')
         return content
 
